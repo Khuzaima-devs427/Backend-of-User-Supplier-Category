@@ -122,6 +122,7 @@ import {
   updateSupplierCategoryStatus,
   deleteSupplierCategory
 } from '../controllers/supplierCategoryController';
+import { uploadProductImage } from '../config/cloudinary';
 
 import {
   createUser,
@@ -152,10 +153,10 @@ router.put('/user-categories/:id/permissions', updateCategoryPermissions);
 router.post('/user-categories/:id/permissions/group', assignPermissionGroup);
 
 // ========== SUPPLIER CATEGORY ROUTES ==========
-router.post('/supplier-categories', createSupplierCategory);
+router.post('/supplier-categories', uploadProductImage, createSupplierCategory);
 router.get('/supplier-categories', getSupplierCategories);
 router.get('/supplier-categories/:id', getSupplierCategoryById);
-router.put('/supplier-categories/:id', updateSupplierCategory);
+router.put('/supplier-categories/:id', uploadProductImage, updateSupplierCategory);
 router.patch('/supplier-categories/:id/status', updateSupplierCategoryStatus);
 router.delete('/supplier-categories/:id', deleteSupplierCategory);
 

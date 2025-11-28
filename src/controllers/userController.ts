@@ -164,22 +164,43 @@ export const createSupplier = async (req: Request, res: Response) => {
 };
 
 // Get All Users (Regular Users only)
+// Get All Users (Regular Users only)
 export const getUsers = async (req: Request, res: Response) => {
   try {
-    const { userType, search, page = 1, limit = 10 } = req.query;
+    const { userType, search, page = 1, limit = 10, isBlocked, isEmailVerified } = req.query;
+    
+    console.log('🔍 Backend received user filters:', {
+      isBlocked,
+      isEmailVerified,
+      search,
+      userType
+    });
     
     const filter: any = { 
       supplierCategory: { $exists: false } // Only regular users
     };
     
+    // FIXED: Handle boolean filters correctly
+    if (isBlocked !== undefined && isBlocked !== '') {
+      filter.isBlocked = isBlocked === 'true';
+    }
+    
+    if (isEmailVerified !== undefined && isEmailVerified !== '') {
+      filter.isEmailVerified = isEmailVerified === 'true';
+    }
+    
     if (userType) filter.userType = userType;
+    
     if (search) {
+      const searchRegex = new RegExp(search as string, 'i');
       filter.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { firstName: { $regex: searchRegex } },
+        { lastName: { $regex: searchRegex } },
+        { email: { $regex: searchRegex } }
       ];
     }
+
+    console.log('📊 Final MongoDB user filter:', JSON.stringify(filter, null, 2));
 
     const users = await User.find(filter)
       .populate('userType', 'role categoryType description')
@@ -189,6 +210,8 @@ export const getUsers = async (req: Request, res: Response) => {
       .skip((Number(page) - 1) * Number(limit));
 
     const total = await User.countDocuments(filter);
+
+    console.log(`✅ Found ${users.length} users out of ${total} total`);
 
     res.json({
       success: true,
@@ -201,6 +224,7 @@ export const getUsers = async (req: Request, res: Response) => {
       }
     });
   } catch (error: any) {
+    console.error('❌ Error fetching users:', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -211,21 +235,32 @@ export const getUsers = async (req: Request, res: Response) => {
 // Get All Suppliers - UPDATED VERSION
 export const getSuppliers = async (req: Request, res: Response) => {
   try {
-    const { userType, supplierCategory, search, page = 1, limit = 10, isBlocked } = req.query;
+    const { userType, supplierCategory, search, page = 1, limit = 10, isBlocked, isEmailVerified } = req.query;
     
-    console.log('📋 Fetching suppliers with filters:', req.query);
+    console.log('🔍 Backend received supplier filters:', {
+      isBlocked,
+      isEmailVerified,
+      search,
+      userType,
+      supplierCategory
+    });
     
     const filter: any = { 
       supplierCategory: { $exists: true } // Only suppliers
     };
     
-    // Add status filter if provided
-    if (isBlocked !== undefined) {
+    // FIXED: Handle boolean filters correctly
+    if (isBlocked !== undefined && isBlocked !== '') {
       filter.isBlocked = isBlocked === 'true';
+    }
+    
+    if (isEmailVerified !== undefined && isEmailVerified !== '') {
+      filter.isEmailVerified = isEmailVerified === 'true';
     }
     
     if (userType) filter.userType = userType;
     if (supplierCategory) filter.supplierCategory = supplierCategory;
+    
     if (search) {
       const searchRegex = new RegExp(search as string, 'i');
       filter.$or = [
@@ -235,7 +270,7 @@ export const getSuppliers = async (req: Request, res: Response) => {
       ];
     }
 
-    console.log('🔍 MongoDB filter:', filter);
+    console.log('📊 Final MongoDB supplier filter:', JSON.stringify(filter, null, 2));
 
     const suppliers = await User.find(filter)
       .populate('userType', 'role categoryType description')
@@ -263,7 +298,7 @@ export const getSuppliers = async (req: Request, res: Response) => {
     console.error('❌ Error fetching suppliers:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to fetch suppliers'
+      message: error.message
     });
   }
 };
