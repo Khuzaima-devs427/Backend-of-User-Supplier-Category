@@ -1,13 +1,13 @@
 services:
   - type: web
-    name: mern-backend-src-app
+    name: server
     env: node
     region: oregon  # or singapore, frankfurt, ohio
     plan: free
     branch: main
     rootDir: .
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node src/index.js
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
