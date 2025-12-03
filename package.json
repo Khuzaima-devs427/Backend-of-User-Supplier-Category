@@ -2,12 +2,14 @@
   "name": "server",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "echo 'Build complete' && exit 0",
-    "start": "node src/index.js",
-    "clean": "rm -rf dist"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "render-build": "npm install && npm run build",
+    "clean": "rm -rf dist",
+    "tsc": "tsc"
   },
   "keywords": [],
   "author": "",
