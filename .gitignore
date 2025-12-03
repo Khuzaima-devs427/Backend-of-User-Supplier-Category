@@ -1,0 +1,136 @@
+# ============================================
+# MERN BACKEND GITIGNORE
+# ============================================
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.development
+.env.production
+.env.test
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pm2.log
+pm2-error.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+.nyc_output/
+
+# Build output
+dist/
+build/
+out/
+server.js
+!src/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Package manager specific
+yarn.lock
+package-lock.json
+.yarn/
+.yarnrc
+
+# Docker
+docker-compose.override.yml
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.csr
+
+# Uploads directory (if you handle file uploads)
+uploads/
+public/uploads/
+temp-uploads/
+
+# MongoDB
+data/
+mongod.log
+*.ns
+*.0
+
+# Session files (if using file-based sessions)
+sessions/
+
+# Cache
+.cache/
+
+# Test files (if not tracked)
+test-results/
+reports/
+
+# Backend-specific
+# =================
+# Compiled files
+*.js.map
+*.ts
+*.tsbuildinfo
+
+# JWT secrets
+jwt_secret.key
+
+# Swagger/API docs generation
+swagger.json
+api-docs/
+
+# PM2 process files
+.pm2/
+
+# Deployment specific
+.elasticbeanstalk/
+.ebextensions/
+
+# ESLint/Babel configs (if not needed)
+.eslintcache
+.babelrc
+
+# Debug
+debug/
