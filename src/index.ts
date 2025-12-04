@@ -10,7 +10,13 @@ connectDB();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://user-supplier-category-t5wz.vercel.app',
+    'http://localhost:3000', // for local development
+  ],
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
