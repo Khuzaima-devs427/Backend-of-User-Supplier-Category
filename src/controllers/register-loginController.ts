@@ -2,8 +2,8 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import User from '../models/User'; // Import your simple User model
-import { UserCategory } from '../models/index'; // Import UserCategory from index
+import AuthUser from '../models/User'; // Updated import - should be AuthUser model
+import { UserCategory } from '../models/index';
 
 // Static Admin Credentials
 const STATIC_ADMIN = {
@@ -61,7 +61,7 @@ export const register = async (req: Request, res: Response) => {
     const { name, email, password } = req.body;
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await AuthUser.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -83,7 +83,7 @@ export const register = async (req: Request, res: Response) => {
     }
 
     // Create new user with name field
-    const user = new User({
+    const user = new AuthUser({
       name,
       email,
       password,
@@ -130,10 +130,10 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-// Login Controller with Static Admin - UPDATED with name field
+// Login Controller with Static Admin
 export const login = async (req: Request, res: Response) => {
   try {
-    const { name, email, password } = req.body; // Include name in request
+    const { name, email, password } = req.body;
 
     // Check static admin credentials
     if (email === STATIC_ADMIN.email && password === STATIC_ADMIN.password) {
@@ -165,8 +165,8 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Regular user login - find by email only (name is for validation, not for query)
-    const user = await User.findOne({ email }).select('+password');
+    // Regular user login
+    const user = await AuthUser.findOne({ email }).select('+password');
     
     if (!user) {
       return res.status(401).json({
@@ -175,8 +175,7 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // OPTIONAL: Validate that the provided name matches the stored name
-    // You can make this case-insensitive and trim spaces for better UX
+    // Validate that the provided name matches the stored name
     const providedName = name.trim().toLowerCase();
     const storedName = user.name.trim().toLowerCase();
     
@@ -263,7 +262,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     }
 
     // Regular user
-    const user = await User.findById(authReq.user?.userId).select('-password');
+    const user = await AuthUser.findById(authReq.user?.userId).select('-password');
 
     if (!user) {
       return res.status(404).json({

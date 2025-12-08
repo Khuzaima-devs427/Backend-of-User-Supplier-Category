@@ -2,7 +2,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-export interface IUser extends Document {
+export interface IAuthUser extends Document {
   name: string;
   email: string;
   password: string;
@@ -13,7 +13,7 @@ export interface IUser extends Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-const userSchema = new Schema<IUser>({
+const authUserSchema = new Schema<IAuthUser>({
   name: {
     type: String,
     required: [true, 'Name is required'],
@@ -57,7 +57,7 @@ const userSchema = new Schema<IUser>({
 });
 
 // Hash password before saving
-userSchema.pre<IUser>('save', async function(next) {
+authUserSchema.pre<IAuthUser>('save', async function(next) {
   if (!this.isModified('password')) return next();
   
   try {
@@ -70,8 +70,9 @@ userSchema.pre<IUser>('save', async function(next) {
 });
 
 // Compare password method
-userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+authUserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-export default mongoose.model<IUser>('User', userSchema);
+// Export as AuthUser to avoid conflict with other User models
+export default mongoose.model<IAuthUser>('AuthUser', authUserSchema);
