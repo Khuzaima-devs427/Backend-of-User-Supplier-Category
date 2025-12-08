@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import cors from 'cors';
 import connectDB from "./config/db";
 import mainRouter from './routes/index';
-
+import authRoutes from './routes/authRoutes'
 dotenv.config();
 connectDB();
 
@@ -24,6 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api', mainRouter);
+app.use('/api', authRoutes)
 
 app.get("/", (req, res) => {
   res.send("API is running...");
