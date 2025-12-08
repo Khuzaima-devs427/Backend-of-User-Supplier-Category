@@ -1,6 +1,6 @@
 // routes/authRoutes.ts
 import express from 'express';
-import { body } from 'express-validator';
+const { body } = require('express-validator');
 import {
   register,
   login,
