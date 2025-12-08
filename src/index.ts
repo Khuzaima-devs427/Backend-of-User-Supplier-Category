@@ -12,6 +12,7 @@ const app = express();
 
 app.use(cors({
   origin: [
+    'https://user-supplier-category-kp5r.vercel.app',
     'https://user-supplier-category-t5wz.vercel.app',
     'https://user-supplier-category-t61i.vercel.app', 
     'http://localhost:3000', // for local development
