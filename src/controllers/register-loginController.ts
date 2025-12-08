@@ -55,10 +55,89 @@ const getUserPermissions = async (userTypeId: any) => {
   }
 };
 
+// ==================== VALIDATION FUNCTIONS ====================
+
+// Validate registration input
+const validateRegistration = (name: string, email: string, password: string): { isValid: boolean; message?: string } => {
+  // Validate name
+  if (!name || name.trim().length === 0) {
+    return { isValid: false, message: 'Name is required' };
+  }
+  
+  if (name.trim().length < 2) {
+    return { isValid: false, message: 'Name must be at least 2 characters long' };
+  }
+  
+  if (name.trim().length > 50) {
+    return { isValid: false, message: 'Name cannot exceed 50 characters' };
+  }
+  
+  // Validate email
+  if (!email || email.trim().length === 0) {
+    return { isValid: false, message: 'Email is required' };
+  }
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { isValid: false, message: 'Please enter a valid email address' };
+  }
+  
+  // Validate password
+  if (!password) {
+    return { isValid: false, message: 'Password is required' };
+  }
+  
+  if (password.length < 8) {
+    return { isValid: false, message: 'Password must be at least 8 characters long' };
+  }
+  
+  return { isValid: true };
+};
+
+// Validate login input
+const validateLogin = (name: string, email: string, password: string): { isValid: boolean; message?: string } => {
+  // Validate name
+  if (!name || name.trim().length === 0) {
+    return { isValid: false, message: 'Name is required' };
+  }
+  
+  if (name.trim().length < 2) {
+    return { isValid: false, message: 'Name must be at least 2 characters long' };
+  }
+  
+  // Validate email
+  if (!email || email.trim().length === 0) {
+    return { isValid: false, message: 'Email is required' };
+  }
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { isValid: false, message: 'Please enter a valid email address' };
+  }
+  
+  // Validate password
+  if (!password) {
+    return { isValid: false, message: 'Password is required' };
+  }
+  
+  return { isValid: true };
+};
+
+// ==================== CONTROLLER FUNCTIONS ====================
+
 // Register Controller
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
+
+    // Validate input
+    const validation = validateRegistration(name, email, password);
+    if (!validation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: validation.message
+      });
+    }
 
     // Check if user already exists
     const existingUser = await AuthUser.findOne({ email });
@@ -84,8 +163,8 @@ export const register = async (req: Request, res: Response) => {
 
     // Create new user with name field
     const user = new AuthUser({
-      name,
-      email,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
       password,
     });
 
@@ -135,6 +214,15 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
 
+    // Validate input
+    const validation = validateLogin(name, email, password);
+    if (!validation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: validation.message
+      });
+    }
+
     // Check static admin credentials
     if (email === STATIC_ADMIN.email && password === STATIC_ADMIN.password) {
       const permissions = getDefaultPermissions('admin');
@@ -157,16 +245,8 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate that name is provided
-    if (!name || name.trim().length < 2) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name is required and must be at least 2 characters'
-      });
-    }
-
     // Regular user login
-    const user = await AuthUser.findOne({ email }).select('+password');
+    const user = await AuthUser.findOne({ email: email.trim().toLowerCase() }).select('+password');
     
     if (!user) {
       return res.status(401).json({
@@ -175,7 +255,7 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate that the provided name matches the stored name
+    // Validate that the provided name matches the stored name (case-insensitive)
     const providedName = name.trim().toLowerCase();
     const storedName = user.name.trim().toLowerCase();
     
