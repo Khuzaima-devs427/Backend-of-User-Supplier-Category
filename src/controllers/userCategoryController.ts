@@ -832,9 +832,11 @@ export const assignPermissionGroup = async (req: Request, res: Response) => {
       ],
       manager: [
         'dashboard.view',
-        'users.view', 'users.create', 'users.edit',
-        'suppliers.view', 'suppliers.create', 'suppliers.edit',
-        'projects.view', 'projects.create', 'projects.edit',
+        'users.view', 'users.edit',
+        'user_categories.view', 'user_categories.edit', 
+        'suppliers.view', 'suppliers.edit',
+        'supplier_categories.view', 'supplier_categories.edit',
+        'projects.view',
         'analytics.view',
         'settings.view'
       ],

@@ -6,6 +6,7 @@ export interface IAuthUser extends Document {
   name: string;
   email: string;
   password: string;
+  userTypeId?: mongoose.Types.ObjectId; // Add to interface
   role: 'user' | 'admin';
   isActive: boolean;
   createdAt: Date;
@@ -33,7 +34,13 @@ const authUserSchema = new Schema<IAuthUser>({
     type: String,
     required: [true, 'Password is required'],
     minlength: [8, 'Password must be at least 8 characters long'],
-    select: false // Don't include password in queries by default
+    select: false
+  },
+  // ADD THIS FIELD TO THE SCHEMA
+  userTypeId: {
+    type: Schema.Types.ObjectId,
+    ref: 'UserCategory',
+    default: null
   },
   role: {
     type: String,
