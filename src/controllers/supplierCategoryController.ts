@@ -1,6 +1,6 @@
 // controllers/supplierCategoryController.ts
 import { Request, Response } from 'express';
-import { SupplierCategory } from '../models/index';
+import { SupplierCategory } from '../models/SupplierCategory';
 import { uploadProductImage, cloudinary } from '../config/cloudinary';
 
 export const createSupplierCategory = async (req: Request, res: Response) => {

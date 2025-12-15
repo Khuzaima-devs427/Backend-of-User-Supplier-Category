@@ -1,7 +1,8 @@
 // controllers/userController.ts
 import { Request, Response } from 'express';
-import { User, UserCategory, SupplierCategory } from '../models/index';
-
+import { User } from '../models/User';
+import {UserCategory} from '../models/UserCategory';
+import {SupplierCategory} from '../models/SupplierCategory';
 // Create User (Regular User)
 export const createUser = async (req: Request, res: Response) => {
   try {
@@ -231,6 +232,8 @@ export const getUsers = async (req: Request, res: Response) => {
     });
   }
 };
+
+
 
 // Get All Suppliers - UPDATED VERSION
 export const getSuppliers = async (req: Request, res: Response) => {

@@ -1001,14 +1001,15 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import AuthUser from '../models/User';
-import { UserCategory, User } from '../models/index';
+// import AuthUser from '../models/User';
+import { User } from '../models/User';
+import { UserCategory } from '../models/UserCategory';
 
 // Static Admin Credentials
 const STATIC_ADMIN = {
   email: 'admin@example.com',
   password: 'admin123',
-  name: 'Super Admin',
+  // name: 'Super Admin',
   role: 'admin'
 };
 
@@ -1341,14 +1342,14 @@ const validateRegistration = (name: string, email: string, password: string): { 
   return { isValid: true };
 };
 
-const validateLogin = (name: string, email: string, password: string): { isValid: boolean; message?: string } => {
-  if (!name || name.trim().length === 0) {
-    return { isValid: false, message: 'Name is required' };
-  }
+const validateLogin = ( email: string, password: string): { isValid: boolean; message?: string } => {
+  // if (!name || name.trim().length === 0) {
+  //   return { isValid: false, message: 'Name is required' };
+  // }
   
-  if (name.trim().length < 2) {
-    return { isValid: false, message: 'Name must be at least 2 characters long' };
-  }
+  // if (name.trim().length < 2) {
+  //   return { isValid: false, message: 'Name must be at least 2 characters long' };
+  // }
   
   if (!email || email.trim().length === 0) {
     return { isValid: false, message: 'Email is required' };
@@ -1368,50 +1369,161 @@ const validateLogin = (name: string, email: string, password: string): { isValid
 
 // ==================== CONTROLLER FUNCTIONS ====================
 
+// export const register = async (req: Request, res: Response) => {
+//   try {
+//     const { name, email, password } = req.body;
+
+//     const validation = validateRegistration(name, email, password);
+//     if (!validation.isValid) {
+//       return res.status(400).json({
+//         success: false,
+//         message: validation.message
+//       });
+//     }
+
+//     const existingUser = await User.findOne({ email });
+//     if (existingUser) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'User with this email already exists'
+//       });
+//     }
+
+//     let defaultCategory = await UserCategory.findOne({ 
+//       categoryType: 'Customer', 
+//       isBlocked: false 
+//     });
+
+//  if (!defaultCategory) {
+//       console.error('❌ Customer category not found in database');
+//       // Try to create it automatically
+//       const newCustomerCategory = new UserCategory({
+//         categoryType: 'Customer',
+//         isBlocked: false,
+//         createdBy: 'system'
+//       });
+      
+//       await newCustomerCategory.save();
+//       console.log('✅ Created default Customer category');
+//       defaultCategory = newCustomerCategory;
+//     }
+
+//     console.log('✅ Using category for registration:', {
+//       categoryType: defaultCategory.categoryType
+//     });
+
+
+//     const user = new User({
+//       name: name.trim(),
+//       email: email.trim().toLowerCase(),
+//       password,
+//       userType: defaultCategory._id,
+//     } as any);
+
+//     await user.save();
+
+//     const permissions = getDefaultViewPermissions();
+    
+//     const token = generateToken(user._id.toString(), user.email, 'user', permissions);
+
+//     res.status(201).json({
+//       success: true,
+//       message: 'Registration successful',
+//       data: {
+//         user: {
+//           _id: user._id,
+//           name: user.name,
+//           email: user.email,
+//           role: 'user'
+//         },
+//         token,
+//         permissions
+//       }
+//     });
+
+//   } catch (error: any) {
+//     console.error('Registration error:', error);
+    
+//     if (error.name === 'ValidationError') {
+//       const messages = Object.values(error.errors).map((err: any) => err.message);
+//       return res.status(400).json({
+//         success: false,
+//         message: messages[0] || 'Validation failed'
+//       });
+//     }
+
+//     res.status(500).json({
+//       success: false,
+//       message: 'Internal server error. Please try again later.'
+//     });
+//   }
+// };
+
+
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
 
+    console.log('🔍 Registration attempt:', { name, email });
+
     const validation = validateRegistration(name, email, password);
     if (!validation.isValid) {
+      console.log('❌ Validation failed:', validation.message);
       return res.status(400).json({
         success: false,
         message: validation.message
       });
     }
 
-    const existingUser = await AuthUser.findOne({ email });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log('❌ User already exists:', email);
       return res.status(400).json({
         success: false,
         message: 'User with this email already exists'
       });
     }
 
-    const defaultCategory = await UserCategory.findOne({ 
-      categoryType: 'User', 
-      isBlocked: false 
-    });
-
-    if (!defaultCategory) {
-      return res.status(400).json({
-        success: false,
-        message: 'Default user role not found. Please contact administrator.'
-      });
-    }
-
-    const user = new AuthUser({
+    // Create user with categoryType
+    const user = new User({
       name: name.trim(),
       email: email.trim().toLowerCase(),
       password,
-      userTypeId: defaultCategory._id,
-    } as any);
+      categoryType: 'Customer', // Direct assignment
+    });
 
+    console.log('📝 User object before save:', {
+      name: user.name,
+      email: user.email,
+      categoryType: user.categoryType,
+      _id: user._id
+    });
+
+    // Save the user
     await user.save();
+    
+    console.log('✅ User saved successfully:', {
+      _id: user._id,
+      categoryType: user.categoryType
+    });
+
+    // Fetch the user again to verify categoryType was saved
+    const savedUser = await User.findById(user._id).select('name email categoryType');
+    console.log('🔍 User from database after save:', {
+      _id: savedUser?._id,
+      name: savedUser?.name,
+      email: savedUser?.email,
+      categoryType: savedUser?.categoryType // Check if it's 'Customer'
+    });
 
     const permissions = getDefaultViewPermissions();
     
-    const token = generateToken(user._id.toString(), user.email, 'user', permissions);
+    const token = generateToken(
+      user._id.toString(), 
+      user.email, 
+      savedUser?.categoryType || 'Customer', // Use saved categoryType
+      permissions
+    );
 
     res.status(201).json({
       success: true,
@@ -1421,7 +1533,7 @@ export const register = async (req: Request, res: Response) => {
           _id: user._id,
           name: user.name,
           email: user.email,
-          role: 'user'
+          categoryType: savedUser?.categoryType || 'Customer' // Confirm in response
         },
         token,
         permissions
@@ -1429,13 +1541,28 @@ export const register = async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Registration error:', error);
+    console.error('❌ Registration error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      errors: error.errors
+    });
     
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map((err: any) => err.message);
+      console.log('❌ Validation errors:', messages);
       return res.status(400).json({
         success: false,
         message: messages[0] || 'Validation failed'
+      });
+    }
+
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      console.log('❌ Duplicate email error');
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists'
       });
     }
 
@@ -1446,13 +1573,16 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
+
+
+
 export const login = async (req: Request, res: Response) => {
   try {
-    const { name, email, password } = req.body;
+    const { email, password } = req.body;
     
-    console.log('Login attempt:', { email, name: name.substring(0, 3) + '...' });
+    console.log('Login attempt:', { email });
 
-    const validation = validateLogin(name, email, password);
+    const validation = validateLogin(email, password);
     if (!validation.isValid) {
       return res.status(400).json({
         success: false,
@@ -1480,7 +1610,7 @@ export const login = async (req: Request, res: Response) => {
         data: {
           user: {
             id: 'static-admin-id',
-            name: STATIC_ADMIN.name,
+            // name: STATIC_ADMIN.name,
             email: STATIC_ADMIN.email,
             role: 'admin',
             isStaticAdmin: true
@@ -1492,36 +1622,36 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Regular user login
-    const user = await AuthUser.findOne({ email: email.trim().toLowerCase() }).select('+password');
+    const user = await User.findOne({ email: email.trim().toLowerCase() }).select('+password');
     
     if (!user) {
-      console.log('User not found in AuthUser:', email);
+      console.log('User not found in User:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
     }
 
-    console.log('User found in AuthUser:', { 
+    console.log('User found in User:', { 
       id: user._id, 
       email: user.email,
       name: user.name,
       role: user.role 
     });
 
-    const providedName = name.trim().toLowerCase();
-    const storedName = user.name.trim().toLowerCase();
+    // const providedName = name.trim().toLowerCase();
+    // const storedName = user.name.trim().toLowerCase();
     
-    if (providedName !== storedName) {
-      console.log('Name mismatch:', { providedName, storedName });
-      return res.status(401).json({
-        success: false,
-        message: 'Name does not match our records'
-      });
-    }
+    // if (providedName !== storedName) {
+    //   console.log('Name mismatch:', { providedName, storedName });
+    //   return res.status(401).json({
+    //     success: false,
+    //     message: 'Name does not match our records'
+    //   });
+    // }
 
     if (user.isActive === false) {
-      console.log('User inactive in AuthUser:', user.email);
+      console.log('User inactive in User:', user.email);
       return res.status(401).json({
         success: false,
         message: 'Your account has been deactivated. Please contact administrator.'
@@ -1587,7 +1717,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
         data: {
           user: {
             id: 'static-admin-id',
-            name: STATIC_ADMIN.name,
+            // name: STATIC_ADMIN.name,
             email: STATIC_ADMIN.email,
             role: 'admin',
             isStaticAdmin: true
@@ -1597,7 +1727,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       });
     }
 
-    const user = await AuthUser.findById(authReq.user?.userId).select('-password');
+    const user = await User.findById(authReq.user?.userId).select('-password');
 
     if (!user) {
       return res.status(404).json({

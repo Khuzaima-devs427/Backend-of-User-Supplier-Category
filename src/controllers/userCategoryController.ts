@@ -339,7 +339,7 @@
 
 // controllers/userCategoryController.ts
 import { Request, Response } from 'express';
-import { UserCategory } from '../models/index';
+import { UserCategory } from '../models/UserCategory';
 
 // Temporary interface extension
 interface UserCategoryWithIsBlocked {
