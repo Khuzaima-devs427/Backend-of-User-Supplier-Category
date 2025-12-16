@@ -1459,72 +1459,202 @@ const validateLogin = ( email: string, password: string): { isValid: boolean; me
 //   }
 // };
 
+// export const register = async (req: Request, res: Response) => {
+//   try {
+//     const { name, email, password } = req.body;
+
+//     console.log('🔍 Registration attempt:', { name, email });
+
+//     const validation = validateRegistration(name, email, password);
+//     if (!validation.isValid) {
+//       console.log('❌ Validation failed:', validation.message);
+//       return res.status(400).json({
+//         success: false,
+//         message: validation.message
+//       });
+//     }
+
+//     const existingUser = await User.findOne({ email });
+//     if (existingUser) {
+//       console.log('❌ User already exists:', email);
+//       return res.status(400).json({
+//         success: false,
+//         message: 'User with this email already exists'
+//       });
+//     }
+
+//     // Create user with categoryType
+//     const user = new User({
+//       name: name.trim(),
+//       email: email.trim().toLowerCase(),
+//       password,
+//       categoryType: 'Customer', // Direct assignment
+//     });
+
+//     console.log('📝 User object before save:', {
+//       name: user.name,
+//       email: user.email,
+//       categoryType: user.categoryType,
+//       _id: user._id
+//     });
+
+//     // Save the user
+//     await user.save();
+    
+//     console.log('✅ User saved successfully:', {
+//       _id: user._id,
+//       categoryType: user.categoryType
+//     });
+
+//     // Fetch the user again to verify categoryType was saved
+//     const savedUser = await User.findById(user._id).select('name email categoryType');
+//     console.log('🔍 User from database after save:', {
+//       _id: savedUser?._id,
+//       name: savedUser?.name,
+//       email: savedUser?.email,
+//       categoryType: savedUser?.categoryType // Check if it's 'Customer'
+//     });
+
+//     const permissions = getDefaultViewPermissions();
+    
+//     const token = generateToken(
+//       user._id.toString(), 
+//       user.email, 
+//       savedUser?.categoryType || 'Customer', // Use saved categoryType
+//       permissions
+//     );
+
+//     res.status(201).json({
+//       success: true,
+//       message: 'Registration successful',
+//       data: {
+//         user: {
+//           _id: user._id,
+//           name: user.name,
+//           email: user.email,
+//           categoryType: savedUser?.categoryType || 'Customer' // Confirm in response
+//         },
+//         token,
+//         permissions
+//       }
+//     });
+
+//   } catch (error: any) {
+//     console.error('❌ Registration error details:', {
+//       name: error.name,
+//       message: error.message,
+//       code: error.code,
+//       errors: error.errors
+//     });
+    
+//     if (error.name === 'ValidationError') {
+//       const messages = Object.values(error.errors).map((err: any) => err.message);
+//       console.log('❌ Validation errors:', messages);
+//       return res.status(400).json({
+//         success: false,
+//         message: messages[0] || 'Validation failed'
+//       });
+//     }
+
+//     // Handle duplicate key errors
+//     if (error.code === 11000) {
+//       console.log('❌ Duplicate email error');
+//       return res.status(400).json({
+//         success: false,
+//         message: 'User with this email already exists'
+//       });
+//     }
+
+//     res.status(500).json({
+//       success: false,
+//       message: 'Internal server error. Please try again later.'
+//     });
+//   }
+// };
+
+
 
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
 
-    console.log('🔍 Registration attempt:', { name, email });
-
+    // Input validation
     const validation = validateRegistration(name, email, password);
     if (!validation.isValid) {
-      console.log('❌ Validation failed:', validation.message);
       return res.status(400).json({
         success: false,
         message: validation.message
       });
     }
 
-    const existingUser = await User.findOne({ email });
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
     if (existingUser) {
-      console.log('❌ User already exists:', email);
       return res.status(400).json({
         success: false,
         message: 'User with this email already exists'
       });
     }
 
-    // Create user with categoryType
+    // Step 1: Check if ANY customer role exists in UserCategory
+    // Search for roles that have 'customer' in the role field
+    const customerRoles = await UserCategory.find({
+      role: { $regex: /customer/i }, // Search in 'role' field
+      isBlocked: false
+    });
+
+    let customerCategory;
+
+    if (customerRoles.length > 0) {
+      // Step 2: If customer role exists, use the first one
+      customerCategory = customerRoles[0];
+      console.log('✅ Using existing customer role:', {
+        categoryId: customerCategory._id,
+        role: customerCategory.role,
+        categoryType: customerCategory.categoryType
+      });
+    } else {
+      // Step 3: If NO customer role exists, create a new one with:
+      // - role: "bydefault customer" (or "Customer")
+      // - categoryType: "Other" (from your enum)
+      console.log('⚠️ No customer role found, creating new "Customer" role...');
+      
+      // Create new customer role in UserCategory
+      const newCustomerCategory = new UserCategory({
+        role: 'Customer', // Role name
+        categoryType: 'Other', // Must be from enum: 'Supplier', 'User', 'Admin', 'Super Admin', 'Other'
+        description: 'Default customer role for registered users',
+        permissions: [], // Add default permissions if needed
+        isBlocked: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      await newCustomerCategory.save();
+      customerCategory = newCustomerCategory;
+      
+      console.log('✅ Created new customer role in UserCategory:', {
+        categoryId: customerCategory._id,
+        role: customerCategory.role,
+        categoryType: customerCategory.categoryType
+      });
+    }
+
+    // Create the new user with the customer role
     const user = new User({
       name: name.trim(),
       email: email.trim().toLowerCase(),
       password,
-      categoryType: 'Customer', // Direct assignment
-    });
+      userType: customerCategory._id, // Assign customer role
+    } as any);
 
-    console.log('📝 User object before save:', {
-      name: user.name,
-      email: user.email,
-      categoryType: user.categoryType,
-      _id: user._id
-    });
-
-    // Save the user
     await user.save();
-    
-    console.log('✅ User saved successfully:', {
-      _id: user._id,
-      categoryType: user.categoryType
-    });
 
-    // Fetch the user again to verify categoryType was saved
-    const savedUser = await User.findById(user._id).select('name email categoryType');
-    console.log('🔍 User from database after save:', {
-      _id: savedUser?._id,
-      name: savedUser?.name,
-      email: savedUser?.email,
-      categoryType: savedUser?.categoryType // Check if it's 'Customer'
-    });
-
+    // Generate permissions and token
     const permissions = getDefaultViewPermissions();
-    
-    const token = generateToken(
-      user._id.toString(), 
-      user.email, 
-      savedUser?.categoryType || 'Customer', // Use saved categoryType
-      permissions
-    );
+    const token = generateToken(user._id.toString(), user.email, 'user', permissions);
 
+    // Send success response
     res.status(201).json({
       success: true,
       message: 'Registration successful',
@@ -1533,7 +1663,10 @@ export const register = async (req: Request, res: Response) => {
           _id: user._id,
           name: user.name,
           email: user.email,
-          categoryType: savedUser?.categoryType || 'Customer' // Confirm in response
+          role: 'user',
+          userType: customerCategory.role, // This will show "bydefault customer"
+          userTypeId: customerCategory._id,
+          categoryType: customerCategory.categoryType // This will show "Other"
         },
         token,
         permissions
@@ -1541,16 +1674,11 @@ export const register = async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('❌ Registration error details:', {
-      name: error.name,
-      message: error.message,
-      code: error.code,
-      errors: error.errors
-    });
+    console.error('Registration error:', error);
     
+    // Handle validation errors
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map((err: any) => err.message);
-      console.log('❌ Validation errors:', messages);
       return res.status(400).json({
         success: false,
         message: messages[0] || 'Validation failed'
@@ -1558,8 +1686,7 @@ export const register = async (req: Request, res: Response) => {
     }
 
     // Handle duplicate key errors
-    if (error.code === 11000) {
-      console.log('❌ Duplicate email error');
+    if (error.code === 11000 || error.code === 11001) {
       return res.status(400).json({
         success: false,
         message: 'User with this email already exists'
@@ -1572,8 +1699,6 @@ export const register = async (req: Request, res: Response) => {
     });
   }
 };
-
-
 
 
 export const login = async (req: Request, res: Response) => {

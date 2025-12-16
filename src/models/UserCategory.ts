@@ -6,7 +6,7 @@ export interface IUserCategory extends Document {
   description: string;
   permissions: string[];
   isBlocked: boolean;
-  categoryType: 'Supplier' | 'User' | 'Admin' | 'Super Admin' | 'Other' | 'Customer';
+  categoryType: 'Supplier' | 'User' | 'Admin' | 'Super Admin' | 'Other';
 
   createdAt: Date;
   updatedAt: Date;
@@ -58,8 +58,7 @@ const UserCategorySchema: Schema = new Schema({
   categoryType: {
     type: String,
     required: true,
-    enum: ['Supplier', 'User', 'Admin', 'Super Admin', 'Other', 'Customer' ],
-    default: 'Customer'
+    enum: ['Supplier', 'User', 'Admin', 'Super Admin', 'Other'],
   }
 }, {
   timestamps: true
