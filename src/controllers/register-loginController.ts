@@ -1132,6 +1132,10 @@ const convertPermissionsToObject = (permissionArray: string[]) => {
     'supplier_categories.create': false,
     'supplier_categories.edit': false,
     'supplier_categories.delete': false,
+    'hero_slider.view': false,
+    'hero_slider.create': false,
+    'hero_slider.edit': false,
+    'hero_slider.delete': false,
     'projects.view': false,
     'analytics.view': false,
     'settings.view': false
@@ -1161,6 +1165,9 @@ const convertPermissionsToObject = (permissionArray: string[]) => {
     }
     if (permission.includes('categories.')) {
       permissions.manageCategories = true;
+    }
+         if (permission.includes('hero_slider.')) {
+      permissions.manageSuppliers = true;
     }
     if (permission.includes('analytics.')) {
       permissions.viewAnalytics = true;
@@ -1213,6 +1220,10 @@ const getAdminPermissions = () => {
     'supplier_categories.create': true,
     'supplier_categories.edit': true,
     'supplier_categories.delete': true,
+    'hero_slider.view': true,
+    'hero_slider.create': true,
+    'hero_slider.edit': true,
+    'hero_slider.delete': true,
     'projects.view': true,
     'analytics.view': true,
     'settings.view': true
@@ -1257,6 +1268,10 @@ const getDefaultViewPermissions = () => {
     'supplier_categories.create': false,
     'supplier_categories.edit': false,
     'supplier_categories.delete': false,
+    'hero_slider.view': true,
+    'hero_slider.create': false,
+    'hero_slider.edit': false,
+    'hero_slider.delete': false,
     'projects.view': true,
     'analytics.view': false,
     'settings.view': false
@@ -1301,6 +1316,10 @@ const getBlockedUserPermissions = () => {
     'supplier_categories.create': false,
     'supplier_categories.edit': false,
     'supplier_categories.delete': false,
+    'hero_slider.view': false,
+    'hero_slider.create': false,
+    'hero_slider.edit': false,
+    'hero_slider.delete': false,
     'projects.view': false,
     'analytics.view': false,
     'settings.view': false

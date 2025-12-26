@@ -382,6 +382,12 @@ export const SYSTEM_PERMISSIONS = {
   'supplier_categories.create': 'supplier_categories.create',
   'supplier_categories.edit': 'supplier_categories.edit',
   'supplier_categories.delete': 'supplier_categories.delete',
+
+
+  'hero_slider.view': 'hero_slider.view',
+  'hero_slider.create': 'hero_slider.create',
+  'hero_slider.edit': 'hero_slider.edit', 
+  'hero_slider.delete': 'hero_slider.delete',
   
   // Projects
   'projects.view': 'projects.view',
@@ -826,6 +832,7 @@ export const assignPermissionGroup = async (req: Request, res: Response) => {
         'user_categories.view', 
         'suppliers.view',
         'supplier_categories.view',
+        'hero_slider.view',
         'projects.view',
         'analytics.view',
         'settings.view'
@@ -836,11 +843,12 @@ export const assignPermissionGroup = async (req: Request, res: Response) => {
         'user_categories.view', 'user_categories.edit', 
         'suppliers.view', 'suppliers.edit',
         'supplier_categories.view', 'supplier_categories.edit',
+        'hero_slider.view', 'hero_slider.edit',
         'projects.view',
         'analytics.view',
         'settings.view'
       ],
-      basic: ['dashboard.view', 'users.view', 'suppliers.view']
+      basic: ['dashboard.view', 'users.view', 'suppliers.view', 'hero_slider.view']
     };
 
     if (!PERMISSION_GROUPS[group]) {

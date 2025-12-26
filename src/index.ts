@@ -4,6 +4,7 @@ import cors from 'cors';
 import connectDB from "./config/db";
 import mainRouter from './routes/index';
 import authRoutes from './routes/authRoutes'
+const heroSliderRoutes = require('./routes/heroSliderRoutes');
 dotenv.config();
 connectDB();
 
@@ -89,7 +90,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api', mainRouter);
-app.use('/api', authRoutes)
+app.use('/api', authRoutes);
+app.use('/api/hero-slider', heroSliderRoutes);
+
+
 
 app.get("/", (req, res) => {
   res.send("API is running...");
