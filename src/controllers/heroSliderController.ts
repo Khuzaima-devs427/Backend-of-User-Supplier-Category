@@ -1,7 +1,5 @@
 // controllers/heroSliderController.ts
 import { Request, Response } from 'express';
-import expressValidator = require('express-validator');
-const { validationResult } = require('express-validator');
 import HeroSlider from '../models/HeroSlider';
 import mongoose from 'mongoose';
 import { cloudinary } from '../config/cloudinary';
