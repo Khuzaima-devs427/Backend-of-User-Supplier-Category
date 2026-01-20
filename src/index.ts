@@ -5,6 +5,12 @@ import connectDB from "./config/db";
 import mainRouter from './routes/index';
 import authRoutes from './routes/authRoutes'
 const heroSliderRoutes = require('./routes/heroSliderRoutes');
+import categoryCardRoutes from './routes/category_CardsRoutes';
+import featuredSalesRoutes from './routes/featured_SalesRoutes';
+import announcementBarRoutes from './routes/announcement_BarRoutes';
+import featureCategory from './routes/feature_categoriesRoutes';
+import featureListing from './routes/feature-ListingsRoutes';
+
 dotenv.config();
 connectDB();
 
@@ -92,6 +98,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api', mainRouter);
 app.use('/api', authRoutes);
 app.use('/api/hero-slider', heroSliderRoutes);
+app.use('/api/category-cards', categoryCardRoutes);
+app.use('/api/featured-sales', featuredSalesRoutes);
+app.use('/api/announcement-bar', announcementBarRoutes);
+app.use('/api/feature-categories', featureCategory);
+app.use('/api/featured-listings', featureListing );
 
 
 
