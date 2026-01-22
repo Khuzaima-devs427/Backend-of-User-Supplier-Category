@@ -663,7 +663,7 @@ export const getActiveCategoryCards = async (req: Request, res: Response): Promi
     
     const activeCards = await CategoryCard.find({ status: 'active' })
       .sort({ displayOrder: 1 })
-      .select('image title subtitle buttonText buttonLink displayOrder') // Added subtitle
+      .select('image title subtitle buttonText buttonLink status displayOrder') // Added subtitle
       .lean();
 
     console.log(`✅ Found ${activeCards.length} active category cards`);

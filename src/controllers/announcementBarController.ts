@@ -2,6 +2,40 @@ import { Request, Response } from 'express';
 import AnnouncementModel, { IAnnouncement } from '../models/announcement_bar';
 
 // Create announcement
+// export const createAnnouncement = async (req: Request, res: Response) => {
+//   try {
+//     const { announcement, status } = req.body;
+
+//     // Validate required fields
+//     if (!announcement) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Announcement text is required'
+//       });
+//     }
+
+//     // Create new announcement
+//     const newAnnouncement: IAnnouncement = await AnnouncementModel.create({
+//       announcement,
+//       status: status || 'inactive'
+//     });
+
+//     return res.status(201).json({
+//       success: true,
+//       message: 'Announcement created successfully',
+//       data: newAnnouncement
+//     });
+//   } catch (error: any) {
+//     console.error('Error creating announcement:', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Error creating announcement',
+//       error: error.message
+//     });
+//   }
+// };
+
+// Create announcement - UPDATED to handle single active announcement
 export const createAnnouncement = async (req: Request, res: Response) => {
   try {
     const { announcement, status } = req.body;
@@ -12,6 +46,14 @@ export const createAnnouncement = async (req: Request, res: Response) => {
         success: false,
         message: 'Announcement text is required'
       });
+    }
+
+    // If trying to create an active announcement, deactivate all others first
+    if (status === 'active') {
+      await AnnouncementModel.updateMany(
+        { status: 'active' },
+        { status: 'inactive' }
+      );
     }
 
     // Create new announcement
@@ -34,6 +76,7 @@ export const createAnnouncement = async (req: Request, res: Response) => {
     });
   }
 };
+
 
 // Get all announcements
 export const getAllAnnouncements = async (req: Request, res: Response) => {
@@ -114,6 +157,49 @@ export const getAnnouncementById = async (req: Request, res: Response) => {
 };
 
 // Update announcement
+// export const updateAnnouncement = async (req: Request, res: Response) => {
+//   try {
+//     const { id } = req.params;
+//     const { announcement, status } = req.body;
+
+//     // Check if announcement exists
+//     const existingAnnouncement = await AnnouncementModel.findById(id);
+//     if (!existingAnnouncement) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Announcement not found'
+//       });
+//     }
+
+//     // Update announcement
+//     const updatedAnnouncement = await AnnouncementModel.findByIdAndUpdate(
+//       id,
+//       { 
+//         ...(announcement && { announcement }),
+//         ...(status && { status })
+//       },
+//       { 
+//         new: true, // Return updated document
+//         runValidators: true // Run schema validators
+//       }
+//     ).select('-__v');
+
+//     return res.status(200).json({
+//       success: true,
+//       message: 'Announcement updated successfully',
+//       data: updatedAnnouncement
+//     });
+//   } catch (error: any) {
+//     console.error('Error updating announcement:', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Error updating announcement',
+//       error: error.message
+//     });
+//   }
+// };
+
+// Update announcement - UPDATED to handle single active announcement
 export const updateAnnouncement = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -126,6 +212,14 @@ export const updateAnnouncement = async (req: Request, res: Response) => {
         success: false,
         message: 'Announcement not found'
       });
+    }
+
+    // If trying to activate this announcement, deactivate all others first
+    if (status === 'active') {
+      await AnnouncementModel.updateMany(
+        { _id: { $ne: id }, status: 'active' }, // All active except current
+        { status: 'inactive' }
+      );
     }
 
     // Update announcement
@@ -188,6 +282,43 @@ export const deleteAnnouncement = async (req: Request, res: Response) => {
 };
 
 // Toggle announcement status
+// export const toggleAnnouncementStatus = async (req: Request, res: Response) => {
+//   try {
+//     const { id } = req.params;
+
+//     const announcement = await AnnouncementModel.findById(id);
+//     if (!announcement) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Announcement not found'
+//       });
+//     }
+
+//     // Toggle status
+//     const newStatus = announcement.status === 'active' ? 'inactive' : 'active';
+    
+//     const updatedAnnouncement = await AnnouncementModel.findByIdAndUpdate(
+//       id,
+//       { status: newStatus },
+//       { new: true, runValidators: true }
+//     ).select('-__v');
+
+//     return res.status(200).json({
+//       success: true,
+//       message: `Announcement ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`,
+//       data: updatedAnnouncement
+//     });
+//   } catch (error: any) {
+//     console.error('Error toggling announcement status:', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Error toggling announcement status',
+//       error: error.message
+//     });
+//   }
+// };
+
+// Toggle announcement status - UPDATED to handle single active announcement
 export const toggleAnnouncementStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -200,9 +331,17 @@ export const toggleAnnouncementStatus = async (req: Request, res: Response) => {
       });
     }
 
-    // Toggle status
+    // Determine new status
     const newStatus = announcement.status === 'active' ? 'inactive' : 'active';
     
+    // If activating this announcement, deactivate all others first
+    if (newStatus === 'active') {
+      await AnnouncementModel.updateMany(
+        { _id: { $ne: id }, status: 'active' }, // All active except current
+        { status: 'inactive' }
+      );
+    }
+
     const updatedAnnouncement = await AnnouncementModel.findByIdAndUpdate(
       id,
       { status: newStatus },
@@ -223,6 +362,57 @@ export const toggleAnnouncementStatus = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+// Activate single announcement (deactivate all others)
+export const activateSingleAnnouncement = async (req: Request, res: Response) => {
+  try {
+    const { announcementId } = req.body;
+
+    if (!announcementId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Announcement ID is required'
+      });
+    }
+
+    // Check if announcement exists
+    const announcement = await AnnouncementModel.findById(announcementId);
+    if (!announcement) {
+      return res.status(404).json({
+        success: false,
+        message: 'Announcement not found'
+      });
+    }
+
+    // Step 1: Deactivate all active announcements
+    await AnnouncementModel.updateMany(
+      { status: 'active' },
+      { status: 'inactive' }
+    );
+
+    // Step 2: Activate the selected announcement
+    const updatedAnnouncement = await AnnouncementModel.findByIdAndUpdate(
+      announcementId,
+      { status: 'active' },
+      { new: true, runValidators: true }
+    ).select('-__v');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Announcement activated successfully. All other announcements are now inactive.',
+      data: updatedAnnouncement
+    });
+  } catch (error: any) {
+    console.error('Error activating single announcement:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error activating announcement',
+      error: error.message
+    });
+  }
+};
+
 
 // Get announcement statistics
 export const getAnnouncementStats = async (req: Request, res: Response) => {

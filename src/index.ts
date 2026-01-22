@@ -10,7 +10,7 @@ import featuredSalesRoutes from './routes/featured_SalesRoutes';
 import announcementBarRoutes from './routes/announcement_BarRoutes';
 import featureCategory from './routes/feature_categoriesRoutes';
 import featureListing from './routes/feature-ListingsRoutes';
-
+import reviewRoutes from './routes/reviewRoutes';
 dotenv.config();
 connectDB();
 
@@ -56,6 +56,42 @@ const app = express();
 //   credentials: true
 // }));
 
+// app.use(cors({
+//   origin: function (origin, callback) {
+//     // Allow no origin (like mobile apps or curl)
+//     if (!origin) {
+//       return callback(null, true);
+//     }
+    
+//     // Allow localhost for development
+//     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+//       console.log(`✅ Allowed (localhost): ${origin}`);
+//       return callback(null, true);
+//     }
+    
+//     // Allow your main Vercel domain (without deployment ID)
+//     const mainDomainPattern = /^https:\/\/user-supplier-category\.vercel\.app$/;
+    
+//     // Allow your Vercel deployment domains (with deployment ID)
+//     const vercelPattern = /^https:\/\/user-supplier-category-[a-z0-9]+\.vercel\.app$/;
+    
+
+
+//     if (mainDomainPattern.test(origin) || vercelPattern.test(origin)) {
+//       console.log(`✅ Allowed (Vercel): ${origin}`);
+//       return callback(null, true);
+//     }
+    
+//     // Block everything else
+//     console.log(`❌ Blocked: ${origin}`);
+//     callback(new Error('Not allowed by CORS'));
+//   },
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization']
+// }));
+
+
 app.use(cors({
   origin: function (origin, callback) {
     // Allow no origin (like mobile apps or curl)
@@ -75,8 +111,18 @@ app.use(cors({
     // Allow your Vercel deployment domains (with deployment ID)
     const vercelPattern = /^https:\/\/user-supplier-category-[a-z0-9]+\.vercel\.app$/;
     
-    if (mainDomainPattern.test(origin) || vercelPattern.test(origin)) {
-      console.log(`✅ Allowed (Vercel): ${origin}`);
+    // ADD THIS: Allow your gamer-pc frontend
+    const gamerPcPattern = /^https:\/\/gamer-pc\.vercel\.app$/;
+    
+    // Also allow any gamer-pc vercel deployments with IDs
+    const gamerPcDeploymentPattern = /^https:\/\/gamer-pc-[a-z0-9]+\.vercel\.app$/;
+    
+    // Check all allowed patterns
+    if (mainDomainPattern.test(origin) || 
+        vercelPattern.test(origin) || 
+        gamerPcPattern.test(origin) ||
+        gamerPcDeploymentPattern.test(origin)) {
+      console.log(`✅ Allowed (${origin.includes('gamer-pc') ? 'Gamer-PC' : 'Main'}: ${origin}`);
       return callback(null, true);
     }
     
@@ -103,7 +149,7 @@ app.use('/api/featured-sales', featuredSalesRoutes);
 app.use('/api/announcement-bar', announcementBarRoutes);
 app.use('/api/feature-categories', featureCategory);
 app.use('/api/featured-listings', featureListing );
-
+app.use('/api/reviews', reviewRoutes);
 
 
 app.get("/", (req, res) => {
