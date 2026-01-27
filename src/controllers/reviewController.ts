@@ -35,6 +35,12 @@ interface ReviewResponse {
   formattedDate: string;
   createdAt: Date;
   updatedAt: Date;
+  productImage?: string;
+}
+
+// Create an extended interface that includes productImage
+interface IReviewWithProductImage extends IReview {
+  productImage?: string;
 }
 
 // Create Review DTO (Data Transfer Object for creating)
@@ -87,6 +93,32 @@ const transformReviewToResponse = (review: IReview): ReviewResponse => {
     formattedDate: review.formattedDate,
     createdAt: review.createdAt,
     updatedAt: review.updatedAt
+    // productImage is NOT included here - it's handled separately
+  };
+};
+
+// New function specifically for transforming reviews with product image
+const transformReviewWithProductImage = (review: IReview, productImage?: string): ReviewResponse => {
+  return {
+    _id: review._id.toString(),
+    listingId: review.listingId.toString(),
+    categoryId: review.categoryId.toString(),
+    userEmail: review.userEmail,
+    rating: review.rating,
+    title: review.title,
+    content: review.content,
+    images: review.images?.map(img => ({
+      url: img.url,
+      uploadedAt: img.uploadedAt
+    })),
+    status: review.status,
+    isVerifiedPurchase: review.isVerifiedPurchase,
+    helpfulVotes: review.helpfulVotes,
+    reportCount: review.reportCount,
+    formattedDate: review.formattedDate,
+    createdAt: review.createdAt,
+    updatedAt: review.updatedAt,
+    productImage: productImage // Add product image separately
   };
 };
 
@@ -96,6 +128,221 @@ const castToIReview = (reviewDoc: any): IReview => {
 };
 
 // ============ CONTROLLER FUNCTIONS ============
+
+// Get ALL reviews for admin management
+export const getAllReviews = async (req: Request, res: Response) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      status = '',
+      rating = '',
+      startDate = '',
+      endDate = '',
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    console.log('📊 Admin fetching all reviews with params:', {
+      page, limit, search, status, rating, startDate, endDate, sortBy, sortOrder
+    });
+
+    // Build query
+    const query: any = { isDeleted: false };
+
+    // Status filter
+    if (status && ['pending', 'approved', 'rejected'].includes(status as string)) {
+      query.status = status;
+    }
+
+    // Rating filter
+    if (rating) {
+      const ratingNum = parseInt(rating as string);
+      if (!isNaN(ratingNum) && ratingNum >= 1 && ratingNum <= 5) {
+        query.rating = ratingNum;
+      }
+    }
+
+    // Date range filter
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        const start = new Date(startDate as string);
+        if (!isNaN(start.getTime())) {
+          query.createdAt.$gte = start;
+        }
+      }
+      if (endDate) {
+        const end = new Date(endDate as string);
+        if (!isNaN(end.getTime())) {
+          // Set end date to end of day
+          end.setHours(23, 59, 59, 999);
+          query.createdAt.$lte = end;
+        }
+      }
+    }
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } },
+        { userEmail: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Build sort object
+    const sort: any = {};
+    const sortField = sortBy as string;
+    
+    // Map frontend sort fields to database fields
+    const sortFieldMap: { [key: string]: string } = {
+      'createdAt': 'createdAt',
+      'updatedAt': 'updatedAt',
+      'rating': 'rating',
+      'helpfulVotes': 'helpfulVotes',
+      'reportCount': 'reportCount',
+      'status': 'status',
+      'title': 'title'
+    };
+    
+    const dbSortField = sortFieldMap[sortField] || 'createdAt';
+    sort[dbSortField] = sortOrder === 'desc' ? -1 : 1;
+    
+    // Add secondary sort by createdAt for consistent ordering
+    if (dbSortField !== 'createdAt') {
+      sort.createdAt = -1;
+    }
+
+    // Calculate pagination
+    const pageNum = Math.max(1, parseInt(page as string));
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit as string))); // Limit max to 100
+    const skip = (pageNum - 1) * limitNum;
+
+    console.log('🔍 Query built:', {
+      query,
+      sort,
+      skip,
+      limit: limitNum
+    });
+
+    // Execute query with lean for performance
+    const reviews = await Review.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limitNum)
+      .populate('listingId', 'title image') // Populate listing title and image
+      .populate('categoryId', 'name')  // Populate category name
+      .lean();
+
+    console.log('✅ Found reviews:', reviews.length);
+
+    // Debug: Check populated data
+    if (reviews.length > 0 && reviews[0].listingId) {
+      const listing = reviews[0].listingId as any;
+      console.log('🔍 Sample listing data:', {
+        listingId: listing,
+        hasImage: listing && 'image' in listing,
+        imageValue: listing?.image,
+        isObjectId: listing instanceof mongoose.Types.ObjectId,
+        type: typeof listing
+      });
+    }
+
+    // Get total count for pagination
+    const totalReviews = await Review.countDocuments(query);
+    const totalPages = Math.ceil(totalReviews / limitNum);
+
+    // Transform reviews for response
+    const transformedReviews = reviews.map(review => {
+      // Cast the review document to IReview
+      const baseReview = castToIReview(review);
+      
+      // Get populated data - IMPORTANT: Cast the entire review to any first
+      const reviewAsAny = review as any;
+      const listingData = reviewAsAny.listingId;
+      const categoryData = reviewAsAny.categoryId;
+      
+      // Check if listingData is actually an object (populated) or just an ObjectId
+      let productImage = null;
+      let listingTitle = 'Unknown Listing';
+      let categoryName = 'Unknown Category';
+      
+      if (listingData && typeof listingData === 'object') {
+        // Check if it's populated (has title property)
+        if ('title' in listingData) {
+          const populatedListing = listingData as any;
+          productImage = populatedListing.image || null;
+          listingTitle = populatedListing.title || 'Unknown Listing';
+        }
+      }
+      
+      if (categoryData && typeof categoryData === 'object') {
+        // Check if it's populated (has name property)
+        if ('name' in categoryData) {
+          const populatedCategory = categoryData as any;
+          categoryName = populatedCategory.name || 'Unknown Category';
+        }
+      }
+      
+      // If no product image from listing, try first review image
+      if (!productImage && baseReview.images && baseReview.images.length > 0) {
+        productImage = baseReview.images[0].url;
+      }
+      
+      // Use the new transformation function
+      const transformed = transformReviewWithProductImage(baseReview, productImage);
+      
+      // Type assertion to add extra fields
+      const reviewWithExtraData = transformed as ReviewResponse & { 
+        listingTitle?: string; 
+        categoryName?: string;
+      };
+      
+      // Add populated data
+      reviewWithExtraData.listingTitle = listingTitle;
+      reviewWithExtraData.categoryName = categoryName;
+      
+      return reviewWithExtraData;
+    });
+
+    // Debug: Check transformed data
+    if (transformedReviews.length > 0) {
+      console.log('🔍 Sample transformed review:', {
+        id: transformedReviews[0]._id,
+        hasProductImage: !!transformedReviews[0].productImage,
+        productImage: transformedReviews[0].productImage,
+        listingTitle: transformedReviews[0].listingTitle,
+        hasReviewImages: transformedReviews[0].images?.length || 0
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Reviews fetched successfully',
+      data: transformedReviews,
+      pagination: {
+        totalItems: totalReviews,
+        currentPage: pageNum,
+        totalPages: totalPages,
+        itemsPerPage: limitNum,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      }
+    });
+
+  } catch (error: any) {
+    console.error('❌ Error fetching all reviews:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching reviews',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+
 
 // Create a new review
 export const createReview = async (req: AuthRequest, res: Response) => {
@@ -589,6 +836,67 @@ export const reportReview = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Server error reporting review'
+    });
+  }
+};
+
+
+// Update review status ONLY (for admin moderation)
+export const updateReviewStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    console.log('🔄 Admin updating review status:', { id, status });
+
+    // Validate review ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid review ID'
+      });
+    }
+
+    // Validate status - only allow these values
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status value. Must be: pending, approved, or rejected'
+      });
+    }
+
+    // Find the review
+    const review = await Review.findOne({
+      _id: new mongoose.Types.ObjectId(id),
+      isDeleted: false
+    });
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: 'Review not found'
+      });
+    }
+
+    console.log(`📝 Updating review ${id} status from "${review.status}" to "${status}"`);
+
+    // Update ONLY the status field
+    review.status = status;
+    await review.save();
+
+    console.log('✅ Review status updated successfully');
+
+    res.status(200).json({
+      success: true,
+      message: `Review status updated to ${status}`,
+      data: transformReviewToResponse(review)
+    });
+
+  } catch (error: any) {
+    console.error('❌ Error updating review status:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update review status'
     });
   }
 };
