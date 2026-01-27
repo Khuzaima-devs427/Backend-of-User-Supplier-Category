@@ -662,7 +662,7 @@ export const getActiveFeaturedSales = async (req: Request, res: Response): Promi
     
     const activeSales = await FeaturedSale.find({ status: 'active' })
       .sort({ displayOrder: 1 })
-      .select('image title subtitle buttonText buttonLink displayOrder')
+      .select('_id image title subtitle buttonText buttonLink displayOrder createdAt updatedAt')
       .lean();
 
     console.log(`✅ Found ${activeSales.length} active featured sales`);

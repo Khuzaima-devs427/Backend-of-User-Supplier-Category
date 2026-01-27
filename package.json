@@ -4,9 +4,9 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "nodemon src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "dev": "node init && nodemon src/index.ts",
+    "build": "node init && tsc",
+    "start": "node init && node dist/index.js",
     "render-build": "npm install && npm run build",
     "clean": "rm -rf dist",
     "tsc": "tsc"
@@ -41,6 +41,7 @@
     "mongoose": "^8.19.3",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
-    "multer-storage-cloudinary": "^4.0.0"
+    "multer-storage-cloudinary": "^4.0.0",
+    "node-fetch": "^3.3.2"
   }
 }
