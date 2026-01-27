@@ -9,12 +9,17 @@ import {
   markHelpful,
   reportReview,
   getUserReviews,
-  getListingReviewStats
+  getListingReviewStats,
+  getAllReviews,
+  updateReviewStatus
 } from '../controllers/reviewController';
 
 const router = express.Router();
 
 // ============ PUBLIC ROUTES ============
+
+// Get ALL reviews with pagination and filtering (ADD THIS ROUTE)
+router.get('/', getAllReviews);
 
 // Get reviews for a specific listing (public)
 router.get('/listing/:listingId', getReviewsByListing);
@@ -48,5 +53,8 @@ router.post('/:id/report', reportReview);
 
 // Get user's reviews (protected - user can see their own)
 router.get('/user/reviews', getUserReviews);
+
+// Add this route - for admin status updates only
+router.put('/:id/status', updateReviewStatus);
 
 export default router;
